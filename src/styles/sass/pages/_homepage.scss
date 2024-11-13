@@ -1,0 +1,122 @@
+.homepage-container {
+
+    .homepage-banner {
+        .mySwiper {
+            &:hover {
+
+                .swiper-button-prev,
+                .swiper-button-next {
+                    visibility: unset;
+                }
+            }
+
+            .swiper-button-prev,
+            .swiper-button-next {
+                visibility: hidden;
+            }
+        }
+    }
+
+
+    .swiper-pagination {
+        position  : unset !important;
+        margin-top: 30px;
+    }
+
+    .swiper-pagination-bullet {
+        width : 10px;
+        height: 10px;
+    }
+
+    .swiper-pagination-bullet-active {
+        background-color: #FCB800;
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+        @apply text-gray-600;
+        background-color: rgba(163, 163, 163, 0.6);
+        color           : white !important;
+        font-weight     : 700;
+
+        &::after {
+            font-size: 12px;
+        }
+    }
+
+    .sub-menu {
+        animation: slideRightToLeft 0.2s ease-in;
+    }
+
+    .swiper-button-disabled {
+        cursor        : not-allowed !important;
+        pointer-events: unset !important;
+    }
+
+    .product-list {
+        .product {
+            &__utility {
+                animation: appearBottomUpAnimation 0.2s ease-in;
+
+                .utility-item {
+                    &:hover {
+                        .tooltip-box {
+                            display: block;
+                        }
+                    }
+                }
+            }
+
+            .tooltip-box {
+                display  : none;
+                animation: appearAnimation 0.4s ease-in;
+
+                .tooltip {
+                    &::after {
+                        content     : "";
+                        position    : absolute;
+                        top         : 100%;
+                        left        : 50%;
+                        margin-left : -5px;
+                        border-width: 5px;
+                        border-style: solid;
+                        border-color: black transparent transparent transparent;
+                    }
+                }
+            }
+
+        }
+    }
+}
+
+@keyframes slideRightToLeft {
+    0% {
+        left: 280px;
+    }
+
+    100% {
+        left: 240px;
+    }
+}
+
+@keyframes appearAnimation {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes appearBottomUpAnimation {
+    0% {
+        opacity  : 0;
+        transform: translateY(20px);
+    }
+
+    100% {
+        opacity  : 1;
+        transform: translateY(0px);
+    }
+}
