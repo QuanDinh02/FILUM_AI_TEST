@@ -8,17 +8,19 @@ import { IoMdRefresh } from "react-icons/io";
 import _ from 'lodash';
 import { useImmer } from 'use-immer';
 import ReactSpeedometer, { CustomSegmentLabelPosition } from "react-d3-speedometer";
+import { isValidEmail } from '@/utils/emailValidate';
 interface IQuestionOption {
-    id: number;
+    id: number
     text: string
-    score: number;
-    isSelected: boolean;
+    score: number
+    isSelected: boolean
 }
 
 interface IQuestion {
-    id: number;
-    title: string;
+    id: number
+    title: string
     options: IQuestionOption[]
+    score: number
 }
 
 interface IQuestionOptionProps {
@@ -26,7 +28,7 @@ interface IQuestionOptionProps {
     activeBtnStyle: string
     optionContent: string
     isSelected: boolean
-    OnClick?: () => void;
+    OnClick?: () => void
 }
 
 interface IResultDescription {
@@ -43,11 +45,46 @@ interface IResult {
 
 interface IEvaluationResultProps {
     score: number
+    result: IResult | null
+    setResult: (result: IResult) => void
 }
 
-const EmailEnterSection = () => {
+interface IEmailEnterSectionProps {
+    email: string
+    setEmail: (email: string) => void
+    step: number
+    setStep: (step: number) => void
+}
 
-    const [email, setEmail] = React.useState<string>("");
+interface IGuidelinesSectionProps {
+    step: number
+    setStep: (step: number) => void
+}
+
+interface IAnswerQuestionSectionProps {
+    step: number
+    setStep: (step: number) => void
+    setTotalScore: (totalScore: number) => void
+}
+
+const EmailEnterSection = (props: IEmailEnterSectionProps) => {
+
+    const { email, setEmail, step, setStep } = props;
+
+    const [emailIsValid, setEmailIsValid] = React.useState<boolean>(true);
+
+    const handleKeyPress = (event) => {
+        if (event.key === 'Enter') {
+            hanldeStartEvaluation();
+        }
+    }
+
+    const hanldeStartEvaluation = () => {
+        if (isValidEmail(email)) {
+            setStep(step + 1);
+        }
+        setEmailIsValid(false);
+    }
 
     return (
         <div className='dark-blue-bg h-screen px-4'>
@@ -61,8 +98,19 @@ const EmailEnterSection = () => {
                 <span>Đánh giá khả năng của bạn trong việc lắng nghe, hiểu và đáp ứng các tín hiệu từ khách hàng.</span>
             </div>
             <div className='w-full sm:w-1/2 lg:w-1/3 mx-auto'>
-                <input type="text" className='w-full outline-none px-4 py-3 mb-4' placeholder='Địa chỉ email của bạn' value={email} onChange={(e) => setEmail(e.target.value)} />
-                <div className='light-blue-bg py-3 flex items-center justify-center gap-x-2 cursor-pointer hover:opacity-90'>
+                <input
+                    type="text"
+                    className='w-full outline-none px-4 py-3 mb-2'
+                    placeholder='Địa chỉ email của bạn'
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyPress={(event) => handleKeyPress(event)}
+                />
+                {
+                    !emailIsValid &&
+                    <div className='text-red-500 text-sm'>Địa chỉ email không đúng định dạng</div>
+                }
+                <div className='light-blue-bg py-3 flex items-center justify-center gap-x-2 cursor-pointer hover:opacity-90 mt-4' onClick={() => hanldeStartEvaluation()}>
                     <span className='text-white'>Bắt đầu</span>
                     <IoRocketSharp className='text-white' />
                 </div>
@@ -71,7 +119,13 @@ const EmailEnterSection = () => {
     )
 }
 
-const GuidelinesSection = () => {
+const GuidelinesSection = (props: IGuidelinesSectionProps) => {
+
+    const { step, setStep } = props;
+
+    const hanldeStartEvaluation = () => {
+        setStep(step + 1);
+    }
 
     return (
         <div className='h-screen px-4 bg-img'>
@@ -91,7 +145,7 @@ const GuidelinesSection = () => {
                         <li className='text-justify'>Chọn "Không rõ vấn đề này": nếu không chắc chắn đã thực hiện hay chưa</li>
                     </ul>
                 </div>
-                <div className='light-blue-bg py-3 flex items-center justify-center gap-x-2 cursor-pointer hover:opacity-90'>
+                <div className='light-blue-bg py-3 flex items-center justify-center gap-x-2 cursor-pointer hover:opacity-90' onClick={() => hanldeStartEvaluation()}>
                     <span className='text-white'>Bắt đầu</span>
                     <IoArrowForwardSharp className='text-white' />
                 </div>
@@ -115,9 +169,10 @@ const QuestionOption = (props: IQuestionOptionProps) => {
     )
 }
 
-const AnswerQuestionSection = () => {
+const AnswerQuestionSection = (props: IAnswerQuestionSectionProps) => {
 
-    const [totalScore, setTotalScore] = React.useState<number>(0);
+    const { setTotalScore, step, setStep } = props;
+
     const [questionNum, setQuestionNum] = React.useState<number>(1);
     const [currentQuestion, setCurrentQuestion] = React.useState<IQuestion>();
     const [questionList, setQuestionList] = useImmer<IQuestion[]>([]);
@@ -140,6 +195,7 @@ const AnswerQuestionSection = () => {
                     let optionList = question.options;
                     let newOptionsList = optionList.map(option => {
                         if (option.id === optionId) {
+                            question.score = option.score;
                             return {
                                 ...option, isSelected: true
                             }
@@ -174,6 +230,15 @@ const AnswerQuestionSection = () => {
 
     }
 
+    const handleEvaluationSubmit = () => {
+        let totalScore = questionList.reduce((acc, question) => {
+            return acc + question.score;
+        }, 0);
+
+        setTotalScore(totalScore);
+        setStep(step + 1);
+    }
+
     React.useEffect(() => {
         let questions = data.questions;
         let newQuestionList = questions.map(question => {
@@ -185,7 +250,7 @@ const AnswerQuestionSection = () => {
             });
 
             return {
-                ...question, options: newOptionsList
+                ...question, options: newOptionsList, score: 0
             }
         });
 
@@ -261,7 +326,7 @@ const AnswerQuestionSection = () => {
                             }
                             {
                                 questionNum === numOfQuestions &&
-                                <div className='light-blue-bg px-6 py-3 flex items-center justify-center gap-x-2 cursor-pointer hover:opacity-90 select-none'>
+                                <div className='light-blue-bg px-6 py-3 flex items-center justify-center gap-x-2 cursor-pointer hover:opacity-90 select-none' onClick={() => handleEvaluationSubmit()}>
                                     <span className='text-white font-medium'>Hoàn tất</span>
                                     <IoArrowForwardSharp className='text-white font-medium' />
                                 </div>
@@ -274,53 +339,9 @@ const AnswerQuestionSection = () => {
     )
 }
 
-const EvaluationResultSharing = () => {
-
-    return (
-
-        <div className='dark-blue-bg h-screen px-4 flex items-center justify-center'>
-            <div className='w-full sm:w-1/2 xl:w-1/3 mx-auto rounded bg-white px-6 py-6 mb-10'>
-                <div className='text-center mb-4'>
-                    <span className='text-lg font-bold tracking-wide'>Chia sẻ kết quả</span>
-                </div>
-                <div className='mb-6'>Đây là một số cách bạn có thể chia sẻ với bạn bè và đồng nghiệp của mình:</div>
-                <div className='flex flex-col gap-y-4 font-medium'>
-                    <button className='text-center text-white py-2 w-full light-blue-bg hover:opacity-90'>Chia sẻ qua Facebook</button>
-                    <button className='text-center light-blue-text py-2 w-full bg-blue-100 hover:opacity-90'>Chia sẻ qua Email</button>
-                    <button className='text-center light-blue-text py-2 w-full bg-blue-100 hover:opacity-90'>Sao chép đường dẫn đến trang kết quả</button>
-                    <button className='text-center light-blue-text py-2 w-full hover:bg-gray-100'>Hủy</button>
-                </div>
-            </div>
-        </div>
-    )
-}
-
-const EvaluationResultEmailSharing = () => {
-
-    return (
-
-        <div className='dark-blue-bg h-screen px-4 flex items-center justify-center'>
-            <div className='w-full sm:w-1/2 xl:w-1/3 mx-auto rounded bg-white px-6 py-6 mb-10'>
-                <div className='text-center mb-4'>
-                    <span className='text-lg font-bold tracking-wide'>Chia sẻ kết quả</span>
-                </div>
-                <div className='mb-4'>Vui lòng cung cấp địa chỉ email mà bạn muốn chia sẻ kết quả:</div>
-                <div className='mb-6'>
-                    <input type="email" className='outline-none px-4 py-2 border border-gray-300 w-full' placeholder='Địa chỉ email nhận kết quả' />
-                </div>
-                <div className='flex items-center justify-between gap-x-4'>
-                    <button className='text-center light-blue-text py-2 bg-blue-100 w-1/2 cursor-pointer hover:opacity-90'>Quay lại</button>
-                    <button className='text-center text-white py-2 light-blue-bg w-1/2 cursor-pointer hover:opacity-90'>Gửi email</button>
-                </div>
-            </div>
-        </div>
-    )
-}
-
 const EvaluationResult = (props: IEvaluationResultProps) => {
 
-    const { score } = props;
-    const [result, setResult] = React.useState<IResult>();
+    const { score, result, setResult } = props;
     const [resultLabelList, setResultLabelList] = React.useState<string[]>([]);
 
     React.useEffect(() => {
@@ -328,6 +349,7 @@ const EvaluationResult = (props: IEvaluationResultProps) => {
         let finalResult = data.results.filter(result => {
             return score >= result.range[0] && score < result.range[1];
         })[0];
+
         setResult(finalResult);
 
         let labelList = data.results.map(result => {
@@ -343,7 +365,7 @@ const EvaluationResult = (props: IEvaluationResultProps) => {
                 <div className='mx-8 py-10 text-center'>
                     <span className='text-white uppercase text-sm'>{data.title}</span>
                 </div>
-                <div className='w-full sm:w-1/2 xl:w-1/3 mx-auto rounded bg-gray-500/70 px-6 py-6 text-white'>
+                <div className='w-full sm:w-1/2 xl:w-1/3 mx-auto rounded bg-gray-500/70 p-6 text-white'>
                     <div className='flex items-center gap-x-4 mb-6'>
                         <div className='bg-white rounded-full p-3'>
                             <img src={result?.icon} alt="" className='w-6 h-6' />
@@ -353,7 +375,7 @@ const EvaluationResult = (props: IEvaluationResultProps) => {
                             <div className='uppercase text-xl font-medium'>{result?.name}</div>
                         </div>
                     </div>
-                    <div className='text-gray-200 mb-8'>{result?.description.text}</div>
+                    <div className='text-gray-200 mb-8 text-justify'>{result?.description.text}</div>
                     {
                         resultLabelList && resultLabelList.length > 0 &&
                         <>
@@ -427,18 +449,91 @@ const EvaluationResult = (props: IEvaluationResultProps) => {
 
 }
 
-const Homepage = () => {
-
-    const [evaluationScore, setEvaluationScore] = React.useState<number>(6);
+const EvaluationResultSharing = () => {
 
     return (
         <>
-            <EmailEnterSection />
-            <GuidelinesSection />
-            <AnswerQuestionSection />
-            <EvaluationResult score={evaluationScore} />
-            <EvaluationResultSharing />
-            <EvaluationResultEmailSharing/>
+            <div className="w-full h-screen fixed dark-blue-bg flex z-50 top-0 right-0 left-0"></div>
+            <div className="h-screen fixed flex items-center justify-center z-[60] top-0 right-0 left-0 px-4">
+                <div className='w-full sm:w-1/2 xl:w-1/3 mx-auto rounded bg-white px-6 py-6 mb-10'>
+                    <div className='text-center mb-4'>
+                        <span className='text-lg font-bold tracking-wide'>Chia sẻ kết quả</span>
+                    </div>
+                    <div className='mb-6'>Đây là một số cách bạn có thể chia sẻ với bạn bè và đồng nghiệp của mình:</div>
+                    <div className='flex flex-col gap-y-4 font-medium'>
+                        <button className='text-center text-white py-2 w-full light-blue-bg hover:opacity-90'>Chia sẻ qua Facebook</button>
+                        <button className='text-center light-blue-text py-2 w-full bg-blue-100 hover:opacity-90'>Chia sẻ qua Email</button>
+                        <button className='text-center light-blue-text py-2 w-full bg-blue-100 hover:opacity-90'>Sao chép đường dẫn đến trang kết quả</button>
+                        <button className='text-center light-blue-text py-2 w-full hover:bg-gray-100'>Hủy</button>
+                    </div>
+                </div>
+            </div>
+        </>
+    )
+}
+
+const EvaluationResultEmailSharing = () => {
+
+    return (
+
+        <>
+            <div className="w-full h-screen fixed dark-blue-bg flex z-50 top-0 right-0 left-0"></div>
+            <div className="h-screen fixed flex items-center justify-center z-[60] top-0 right-0 left-0 px-4">
+                <div className='w-full sm:w-1/2 xl:w-1/3 mx-auto rounded bg-white px-6 py-6 mb-10'>
+                    <div className='text-center mb-4'>
+                        <span className='text-lg font-bold tracking-wide'>Chia sẻ kết quả</span>
+                    </div>
+                    <div className='mb-4'>Vui lòng cung cấp địa chỉ email mà bạn muốn chia sẻ kết quả:</div>
+                    <div className='mb-6'>
+                        <input type="email" className='outline-none px-4 py-2 border border-gray-300 w-full' placeholder='Địa chỉ email nhận kết quả' />
+                    </div>
+                    <div className='flex items-center justify-between gap-x-4'>
+                        <button className='text-center light-blue-text py-2 bg-blue-100 w-1/2 cursor-pointer hover:opacity-90'>Quay lại</button>
+                        <button className='text-center text-white py-2 light-blue-bg w-1/2 cursor-pointer hover:opacity-90'>Gửi email</button>
+                    </div>
+                </div>
+            </div>
+        </>
+    )
+}
+
+const Homepage = () => {
+
+    const [email, setEmail] = React.useState<string>("");
+
+    const [evaluationStep, setEvaluationStep] = React.useState<number>(1);
+    const [evaluationScore, setEvaluationScore] = React.useState<number>(0);
+    const [result, setResult] = React.useState<IResult | null>(null);
+
+    const [showSharingOptions, setShowSharingOptions] = React.useState<boolean>(false);
+    const [showEmailSharing, setShowEmailSharing] = React.useState<boolean>(false);
+
+    return (
+        <>
+            {
+                evaluationStep === 1 &&
+                <EmailEnterSection email={email} setEmail={setEmail} step={evaluationStep} setStep={setEvaluationStep} />
+            }
+            {
+                evaluationStep === 2 &&
+                <GuidelinesSection step={evaluationStep} setStep={setEvaluationStep} />
+            }
+            {
+                evaluationStep === 3 &&
+                <AnswerQuestionSection step={evaluationStep} setStep={setEvaluationStep} setTotalScore={setEvaluationScore} />
+            }
+            {
+                evaluationStep === 4 && !showSharingOptions && !showEmailSharing &&
+                <EvaluationResult score={evaluationScore} result={result} setResult={setResult} />
+            }
+            {
+                showSharingOptions &&
+                <EvaluationResultSharing />
+            }
+            {
+                showEmailSharing &&
+                <EvaluationResultEmailSharing />
+            }
         </>
     )
 }
