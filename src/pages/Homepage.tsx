@@ -547,8 +547,8 @@ const Homepage = () => {
 
     const [email, setEmail] = React.useState<string>("");
 
-    const [evaluationStep, setEvaluationStep] = React.useState<number>(4);
-    const [evaluationScore, setEvaluationScore] = React.useState<number>(6);
+    const [evaluationStep, setEvaluationStep] = React.useState<number>(1);
+    const [evaluationScore, setEvaluationScore] = React.useState<number>(0);
     const [result, setResult] = React.useState<IResult | null>(null);
 
     const [showSharingOptions, setShowSharingOptions] = React.useState<boolean>(false);
