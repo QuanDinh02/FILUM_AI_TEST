@@ -9,6 +9,9 @@ import _ from 'lodash';
 import { useImmer } from 'use-immer';
 import ReactSpeedometer, { CustomSegmentLabelPosition } from "react-d3-speedometer";
 import { isValidEmail } from '@/utils/emailValidate';
+import { EmailShareButton, FacebookShareButton } from 'react-share';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
+
 interface IQuestionOption {
     id: number
     text: string
@@ -47,6 +50,8 @@ interface IEvaluationResultProps {
     score: number
     result: IResult | null
     setResult: (result: IResult) => void
+    setShowSharingOptions: (value: boolean) => void
+    setStep: (step: number) => void
 }
 
 interface IEmailEnterSectionProps {
@@ -66,6 +71,19 @@ interface IAnswerQuestionSectionProps {
     setStep: (step: number) => void
     setTotalScore: (totalScore: number) => void
 }
+
+interface IEvaluationResultSharingProps {
+    level: number
+    setShow: (value: boolean) => void
+    setShowEmailSharing: (value: boolean) => void
+}
+
+interface IEvaluationResultEmailSharingProps {
+    setShow: (value: boolean) => void
+}
+
+const imageUrls = ["https://ibb.co/ZXR94B5", "https://ibb.co/cxf0Dyx", "https://ibb.co/C73Nd6R", "https://ibb.co/sKks2tt", "https://ibb.co/vvKzGxT"];
+const resultUrls = ["https://i.ibb.co/V906ngR/level-1.jpg", "https://i.ibb.co/1by180b/level-2.jpg", "https://i.ibb.co/bBMqhFc/level-3.jpg", "https://i.ibb.co/c6M21xx/level-4.jpg", "https://i.ibb.co/NnHYP6J/level-5.jpg"];
 
 const EmailEnterSection = (props: IEmailEnterSectionProps) => {
 
@@ -341,8 +359,17 @@ const AnswerQuestionSection = (props: IAnswerQuestionSectionProps) => {
 
 const EvaluationResult = (props: IEvaluationResultProps) => {
 
-    const { score, result, setResult } = props;
+    const { score, result, setResult, setShowSharingOptions, setStep } = props;
     const [resultLabelList, setResultLabelList] = React.useState<string[]>([]);
+
+    const handleDownload = (imageName: string) => {
+        const link = document.createElement("a");
+        link.href = `/thumbnails/level_${result?.level}.jpg`;
+        link.download = imageName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
 
     React.useEffect(() => {
 
@@ -432,14 +459,14 @@ const EvaluationResult = (props: IEvaluationResultProps) => {
                 </div>
             </div>
             <div className='absolute inset-y-0 right-0 flex flex-col gap-y-2 justify-center'>
-                <div className='light-blue-bg text-white pt-6 pb-2 flex flex-col items-center gap-y-5'>
+                <div className='light-blue-bg text-white pt-6 pb-2 flex flex-col items-center gap-y-5 cursor-pointer' onClick={() => setShowSharingOptions(true)}>
                     <div className='-rotate-90 h-auto whitespace-nowrap'>Chia sẻ</div>
                     <div><RiShareBoxFill className='w-5 h-5' /></div>
                 </div>
-                <div className='bg-white py-2 flex items-center justify-center'>
+                <div className='bg-white py-2 flex items-center justify-center cursor-pointer' onClick={() => handleDownload("my_result.jpg")}>
                     <div><LuDownload className='w-5 h-5 light-blue-text' /></div>
                 </div>
-                <div className='bg-white py-2 flex items-center justify-center'>
+                <div className='bg-white py-2 flex items-center justify-center cursor-pointer' onClick={() => setStep(1)}>
                     <div><IoMdRefresh className='w-5 h-5 light-blue-text' /></div>
                 </div>
             </div>
@@ -449,7 +476,9 @@ const EvaluationResult = (props: IEvaluationResultProps) => {
 
 }
 
-const EvaluationResultSharing = () => {
+const EvaluationResultSharing = (props: IEvaluationResultSharingProps) => {
+
+    const { level, setShow, setShowEmailSharing } = props;
 
     return (
         <>
@@ -461,10 +490,18 @@ const EvaluationResultSharing = () => {
                     </div>
                     <div className='mb-6'>Đây là một số cách bạn có thể chia sẻ với bạn bè và đồng nghiệp của mình:</div>
                     <div className='flex flex-col gap-y-4 font-medium'>
-                        <button className='text-center text-white py-2 w-full light-blue-bg hover:opacity-90'>Chia sẻ qua Facebook</button>
-                        <button className='text-center light-blue-text py-2 w-full bg-blue-100 hover:opacity-90'>Chia sẻ qua Email</button>
-                        <button className='text-center light-blue-text py-2 w-full bg-blue-100 hover:opacity-90'>Sao chép đường dẫn đến trang kết quả</button>
-                        <button className='text-center light-blue-text py-2 w-full hover:bg-gray-100'>Hủy</button>
+                        <FacebookShareButton
+                            url={imageUrls[level - 1]}
+                        >
+                            <button className='text-center text-white py-2 w-full light-blue-bg hover:opacity-90 cursor-pointer'>Chia sẻ qua Facebook</button>
+                        </FacebookShareButton>
+                        <button className='text-center light-blue-text py-2 w-full bg-blue-100 hover:opacity-90 cursor-pointer' onClick={() => setShowEmailSharing(true)}>Chia sẻ qua Email</button>
+                        <CopyToClipboard
+                            text={resultUrls[level - 1]}
+                        >
+                            <button className='text-center light-blue-text py-2 w-full bg-blue-100 hover:opacity-90 cursor-pointer'>Sao chép đường dẫn đến trang kết quả</button>
+                        </CopyToClipboard>
+                        <button className='text-center light-blue-text py-2 w-full hover:bg-gray-100 cursor-pointer' onClick={() => setShow(false)}>Hủy</button>
                     </div>
                 </div>
             </div>
@@ -472,7 +509,9 @@ const EvaluationResultSharing = () => {
     )
 }
 
-const EvaluationResultEmailSharing = () => {
+const EvaluationResultEmailSharing = (props: IEvaluationResultEmailSharingProps) => {
+
+    const { setShow } = props;
 
     return (
 
@@ -488,8 +527,15 @@ const EvaluationResultEmailSharing = () => {
                         <input type="email" className='outline-none px-4 py-2 border border-gray-300 w-full' placeholder='Địa chỉ email nhận kết quả' />
                     </div>
                     <div className='flex items-center justify-between gap-x-4'>
-                        <button className='text-center light-blue-text py-2 bg-blue-100 w-1/2 cursor-pointer hover:opacity-90'>Quay lại</button>
-                        <button className='text-center text-white py-2 light-blue-bg w-1/2 cursor-pointer hover:opacity-90'>Gửi email</button>
+                        <button className='text-center light-blue-text py-2 bg-blue-100 w-1/2 cursor-pointer hover:opacity-90' onClick={() => setShow((false))}>Quay lại</button>
+                        <button className='text-center text-white py-2 light-blue-bg w-1/2 cursor-pointer hover:opacity-90'>
+                            <EmailShareButton
+                                url={'dachetmehet113@gmail.com'}
+                            >
+                                Gửi email
+                            </EmailShareButton >
+                        </button>
+
                     </div>
                 </div>
             </div>
@@ -501,8 +547,8 @@ const Homepage = () => {
 
     const [email, setEmail] = React.useState<string>("");
 
-    const [evaluationStep, setEvaluationStep] = React.useState<number>(1);
-    const [evaluationScore, setEvaluationScore] = React.useState<number>(0);
+    const [evaluationStep, setEvaluationStep] = React.useState<number>(4);
+    const [evaluationScore, setEvaluationScore] = React.useState<number>(6);
     const [result, setResult] = React.useState<IResult | null>(null);
 
     const [showSharingOptions, setShowSharingOptions] = React.useState<boolean>(false);
@@ -524,15 +570,21 @@ const Homepage = () => {
             }
             {
                 evaluationStep === 4 && !showSharingOptions && !showEmailSharing &&
-                <EvaluationResult score={evaluationScore} result={result} setResult={setResult} />
+                <EvaluationResult
+                    score={evaluationScore}
+                    result={result}
+                    setResult={setResult}
+                    setShowSharingOptions={setShowSharingOptions}
+                    setStep={setEvaluationStep}
+                />
             }
             {
-                showSharingOptions &&
-                <EvaluationResultSharing />
+                showSharingOptions && !showEmailSharing &&
+                <EvaluationResultSharing level={result ? result?.level : 1} setShow={setShowSharingOptions} setShowEmailSharing={setShowEmailSharing} />
             }
             {
                 showEmailSharing &&
-                <EvaluationResultEmailSharing />
+                <EvaluationResultEmailSharing setShow={setShowEmailSharing} />
             }
         </>
     )
